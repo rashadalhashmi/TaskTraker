@@ -1,8 +1,12 @@
+using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
 using Microsoft.EntityFrameworkCore;
 using MudBlazor.Services;
 using TaskTracker.Data;
 using TaskTracker.Repositories;
 using TaskTracker.Services;
+using TaskTracker.Hubs;
+using Microsoft.AspNetCore.SignalR;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,6 +28,11 @@ builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Progr
 // Add MudBlazor services
 builder.Services.AddMudServices();
 
+// Add SignalR
+builder.Services.AddSignalR();
+builder.Services.AddSingleton<TimerBackgroundService>();
+builder.Services.AddHostedService(sp => sp.GetRequiredService<TimerBackgroundService>());
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -38,6 +47,7 @@ app.UseStaticFiles();
 app.UseRouting();
 
 app.MapBlazorHub();
+app.MapHub<TimeTrackingHub>("/timeTrackingHub");
 app.MapFallbackToPage("/_Host");
 
 // Ensure database is created and migrations are applied
