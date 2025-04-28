@@ -6,32 +6,49 @@
 @inject IDialogService DialogService
 
 <MudDialog>
-    <MudDialogContent>
-        <MudTextField @bind-Value="_newTask.Title" Label="Title" Required="true" />
-        <MudTextField @bind-Value="_newTask.Description" Label="Description" Lines="3" />
-        <MudNumericField @bind-Value="_newTask.EstimatedEffort" Label="Estimated Effort (minutes)" Required="true" />
-    </MudDialogContent>
-    <MudDialogActions>
-        <MudButton Color="Color.Primary" OnClick="Submit">Add Task</MudButton>
+    <DialogContent>
+        <MudContainer>
+            <MudTextField @bind-Value="_newTask.Title" Label="Title" Required="true" Variant="Variant.Outlined" Class="mt-3" />
+            <MudTextField @bind-Value="_newTask.Description" Label="Description" Lines="3" Variant="Variant.Outlined" Class="mt-3" />
+            <MudNumericField @bind-Value="_newTask.EstimatedEffort" Label="Estimated Effort (minutes)" Required="true" Variant="Variant.Outlined" Class="mt-3" />
+        </MudContainer>
+    </DialogContent>
+    <DialogActions>
         <MudButton Color="Color.Secondary" OnClick="Cancel">Cancel</MudButton>
-    </MudDialogActions>
+        <MudButton Color="Color.Primary" OnClick="Submit">Add Task</MudButton>
+    </DialogActions>
 </MudDialog>
 
 @code {
     [CascadingParameter] MudDialogInstance MudDialog { get; set; } = default!;
 
     private TaskItem _newTask = new();
+    private bool _isSubmitting;
 
     private async System.Threading.Tasks.Task Submit()
     {
-        var command = new CreateTaskCommand
+        if (_isSubmitting) return;
+        _isSubmitting = true;
+
+        try
         {
-            Title = _newTask.Title,
-            Description = _newTask.Description,
-            EstimatedEffort = _newTask.EstimatedEffort
-        };
-        await Mediator.Send(command);
-        MudDialog.Close(DialogResult.Ok(true));
+            var command = new CreateTaskCommand
+            {
+                Title = _newTask.Title,
+                Description = _newTask.Description,
+                EstimatedEffort = _newTask.EstimatedEffort
+            };
+            await Mediator.Send(command);
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex)
+        {
+            await DialogService.ShowMessageBox("Error", $"Failed to create task: {ex.Message}");
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
     }
 
     private void Cancel()

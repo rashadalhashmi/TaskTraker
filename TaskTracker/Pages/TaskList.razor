@@ -82,8 +82,8 @@
 
     private async System.Threading.Tasks.Task OpenAddTaskDialog()
     {
-        var parameters = new DialogParameters();
-        var dialog = DialogService.Show<AddTaskDialog>("Add New Task", parameters);
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = DialogService.Show<AddTaskDialog>("Add New Task", options);
         var result = await dialog.Result;
 
         if (!result.Canceled)
@@ -94,11 +94,12 @@
 
     private async System.Threading.Tasks.Task OpenEditTaskDialog(TaskItem task)
     {
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
         var parameters = new DialogParameters
         {
             ["Task"] = task
         };
-        var dialog = DialogService.Show<EditTaskDialog>("Edit Task", parameters);
+        var dialog = DialogService.Show<EditTaskDialog>("Edit Task", parameters, options);
         var result = await dialog.Result;
 
         if (!result.Canceled)
@@ -109,6 +110,7 @@
 
     private async System.Threading.Tasks.Task DeleteTask(TaskItem task)
     {
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
         var parameters = new DialogParameters
         {
             ["ContentText"] = $"Are you sure you want to delete task '{task.Title}'?",
@@ -116,7 +118,7 @@
             ["Color"] = Color.Error
         };
 
-        var dialog = DialogService.Show<ConfirmationDialog>("Delete Task", parameters);
+        var dialog = DialogService.Show<ConfirmationDialog>("Delete Task", parameters, options);
         var result = await dialog.Result;
 
         if (!result.Canceled)

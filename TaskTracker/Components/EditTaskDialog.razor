@@ -6,20 +6,22 @@
 @inject IDialogService DialogService
 
 <MudDialog>
-    <MudDialogContent>
-        <MudTextField @bind-Value="Task.Title" Label="Title" Required="true" />
-        <MudTextField @bind-Value="Task.Description" Label="Description" Lines="3" />
-        <MudNumericField @bind-Value="Task.EstimatedEffort" Label="Estimated Effort (minutes)" Required="true" />
-        <MudSelect @bind-Value="Task.Status" Label="Status" Required="true">
-            <MudSelectItem Value="@TaskState.Backlog">Backlog</MudSelectItem>
-            <MudSelectItem Value="@TaskState.InProgress">In Progress</MudSelectItem>
-            <MudSelectItem Value="@TaskState.Done">Done</MudSelectItem>
-        </MudSelect>
-    </MudDialogContent>
-    <MudDialogActions>
-        <MudButton Color="Color.Primary" OnClick="Submit">Save</MudButton>
+    <DialogContent>
+        <MudContainer>
+            <MudTextField @bind-Value="Task.Title" Label="Title" Required="true" Variant="Variant.Outlined" Class="mt-3" />
+            <MudTextField @bind-Value="Task.Description" Label="Description" Lines="3" Variant="Variant.Outlined" Class="mt-3" />
+            <MudNumericField @bind-Value="Task.EstimatedEffort" Label="Estimated Effort (minutes)" Required="true" Variant="Variant.Outlined" Class="mt-3" />
+            <MudSelect @bind-Value="Task.Status" Label="Status" Required="true" Variant="Variant.Outlined" Class="mt-3">
+                <MudSelectItem Value="@TaskState.Backlog">Backlog</MudSelectItem>
+                <MudSelectItem Value="@TaskState.InProgress">In Progress</MudSelectItem>
+                <MudSelectItem Value="@TaskState.Done">Done</MudSelectItem>
+            </MudSelect>
+        </MudContainer>
+    </DialogContent>
+    <DialogActions>
         <MudButton Color="Color.Secondary" OnClick="Cancel">Cancel</MudButton>
-    </MudDialogActions>
+        <MudButton Color="Color.Primary" OnClick="Submit">Save</MudButton>
+    </DialogActions>
 </MudDialog>
 
 @code {
@@ -29,18 +31,34 @@
     [CascadingParameter]
     MudDialogInstance MudDialog { get; set; } = default!;
 
+    private bool _isSubmitting;
+
     private async System.Threading.Tasks.Task Submit()
     {
-        var command = new UpdateTaskCommand
+        if (_isSubmitting) return;
+        _isSubmitting = true;
+
+        try
         {
-            Id = Task.Id,
-            Title = Task.Title,
-            Description = Task.Description,
-            Status = Task.Status,
-            EstimatedEffort = Task.EstimatedEffort
-        };
-        await Mediator.Send(command);
-        MudDialog.Close(DialogResult.Ok(true));
+            var command = new UpdateTaskCommand
+            {
+                Id = Task.Id,
+                Title = Task.Title,
+                Description = Task.Description,
+                Status = Task.Status,
+                EstimatedEffort = Task.EstimatedEffort
+            };
+            await Mediator.Send(command);
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex)
+        {
+            await DialogService.ShowMessageBox("Error", $"Failed to update task: {ex.Message}");
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
     }
 
     private void Cancel()
