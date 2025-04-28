@@ -1,0 +1,139 @@
+@page "/task/{TaskId:int}"
+@using TaskTracker.Models
+@using TaskTracker.Features.Tasks.Queries
+@using TaskTracker.Services
+@using MudBlazor
+@using MediatR
+@inject IMediator Mediator
+@inject ITimeTrackerService TimeTrackerService
+@inject NavigationManager NavigationManager
+
+<PageTitle>Task Details</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-4">
+    @if (_task == null)
+    {
+        <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+    }
+    else
+    {
+        <MudPaper Class="pa-4">
+            <MudText Typo="Typo.h4" Class="mb-4">@_task.Title</MudText>
+            
+            <MudText Typo="Typo.body1" Class="mb-4">@_task.Description</MudText>
+            
+            <MudGrid>
+                <MudItem xs="12" sm="6">
+                    <MudText Typo="Typo.subtitle1">Status</MudText>
+                    <MudChip Color="@GetStatusColor(_task.Status)" Size="Size.Small">
+                        @_task.Status
+                    </MudChip>
+                </MudItem>
+                
+                <MudItem xs="12" sm="6">
+                    <MudText Typo="Typo.subtitle1">Estimated Effort</MudText>
+                    <MudText>@_task.EstimatedEffort minutes</MudText>
+                </MudItem>
+                
+                <MudItem xs="12" sm="6">
+                    <MudText Typo="Typo.subtitle1">Total Time Spent</MudText>
+                    <MudText>@FormatTimeSpan(_task.TotalTimeSpent)</MudText>
+                </MudItem>
+                
+                <MudItem xs="12" sm="6">
+                    <MudText Typo="Typo.subtitle1">Current Session</MudText>
+                    <MudText>@FormatTimeSpan(TimeTrackerService.GetElapsedTime(_task.Id))</MudText>
+                </MudItem>
+            </MudGrid>
+
+            <MudDivider Class="my-4" />
+
+            <MudButtonGroup Variant="Variant.Filled" Color="Color.Primary" Class="mt-4">
+                @if (TimeTrackerService.IsTimerRunning(_task.Id))
+                {
+                    <MudButton OnClick="StopTimer">Stop Timer</MudButton>
+                }
+                else
+                {
+                    <MudButton OnClick="StartTimer">Start Timer</MudButton>
+                }
+                <MudButton OnClick="GoBack">Back to List</MudButton>
+            </MudButtonGroup>
+        </MudPaper>
+    }
+</MudContainer>
+
+@code {
+    [Parameter]
+    public int TaskId { get; set; }
+
+    private TaskItem? _task;
+    private Timer? _timer;
+    private bool _isTimerRunning;
+
+    protected override async System.Threading.Tasks.Task OnInitializedAsync()
+    {
+        _task = await Mediator.Send(new GetTaskByIdQuery { Id = TaskId });
+        if (_task == null)
+        {
+            NavigationManager.NavigateTo("/");
+            return;
+        }
+
+        _isTimerRunning = TimeTrackerService.IsTimerRunning(TaskId);
+        if (_isTimerRunning)
+        {
+            StartUpdateTimer();
+        }
+    }
+
+    private void StartUpdateTimer()
+    {
+        _timer = new Timer(async _ =>
+        {
+            await InvokeAsync(StateHasChanged);
+        }, null, 0, 1000);
+    }
+
+    private async System.Threading.Tasks.Task StartTimer()
+    {
+        await TimeTrackerService.StartTimerAsync(TaskId);
+        _isTimerRunning = true;
+        StartUpdateTimer();
+    }
+
+    private async System.Threading.Tasks.Task StopTimer()
+    {
+        await TimeTrackerService.StopTimerAsync(TaskId);
+        _isTimerRunning = false;
+        _timer?.Dispose();
+        _timer = null;
+        _task = await Mediator.Send(new GetTaskByIdQuery { Id = TaskId });
+    }
+
+    private void GoBack()
+    {
+        NavigationManager.NavigateTo("/");
+    }
+
+    private Color GetStatusColor(TaskState status)
+    {
+        return status switch
+        {
+            TaskState.Backlog => Color.Default,
+            TaskState.InProgress => Color.Warning,
+            TaskState.Done => Color.Success,
+            _ => Color.Default
+        };
+    }
+
+    private string FormatTimeSpan(TimeSpan timeSpan)
+    {
+        return $"{(int)timeSpan.TotalHours}h {timeSpan.Minutes}m {timeSpan.Seconds}s";
+    }
+
+    public void Dispose()
+    {
+        _timer?.Dispose();
+    }
+} 

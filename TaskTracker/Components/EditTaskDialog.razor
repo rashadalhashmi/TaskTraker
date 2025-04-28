@@ -1,0 +1,50 @@
+@using MudBlazor
+@using MediatR
+@using TaskTracker.Models
+@using TaskTracker.Features.Tasks.Commands
+@inject IMediator Mediator
+@inject IDialogService DialogService
+
+<MudDialog>
+    <MudDialogContent>
+        <MudTextField @bind-Value="Task.Title" Label="Title" Required="true" />
+        <MudTextField @bind-Value="Task.Description" Label="Description" Lines="3" />
+        <MudNumericField @bind-Value="Task.EstimatedEffort" Label="Estimated Effort (minutes)" Required="true" />
+        <MudSelect @bind-Value="Task.Status" Label="Status" Required="true">
+            <MudSelectItem Value="@TaskState.Backlog">Backlog</MudSelectItem>
+            <MudSelectItem Value="@TaskState.InProgress">In Progress</MudSelectItem>
+            <MudSelectItem Value="@TaskState.Done">Done</MudSelectItem>
+        </MudSelect>
+    </MudDialogContent>
+    <MudDialogActions>
+        <MudButton Color="Color.Primary" OnClick="Submit">Save</MudButton>
+        <MudButton Color="Color.Secondary" OnClick="Cancel">Cancel</MudButton>
+    </MudDialogActions>
+</MudDialog>
+
+@code {
+    [Parameter]
+    public TaskItem Task { get; set; } = default!;
+
+    [CascadingParameter]
+    MudDialogInstance MudDialog { get; set; } = default!;
+
+    private async System.Threading.Tasks.Task Submit()
+    {
+        var command = new UpdateTaskCommand
+        {
+            Id = Task.Id,
+            Title = Task.Title,
+            Description = Task.Description,
+            Status = Task.Status,
+            EstimatedEffort = Task.EstimatedEffort
+        };
+        await Mediator.Send(command);
+        MudDialog.Close(DialogResult.Ok(true));
+    }
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+} 

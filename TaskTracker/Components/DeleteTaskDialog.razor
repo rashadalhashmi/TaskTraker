@@ -1,0 +1,35 @@
+@using MudBlazor
+@using MediatR
+@using TaskTracker.Models
+@using TaskTracker.Features.Tasks.Commands
+@inject IMediator Mediator
+
+<MudDialog>
+    <MudDialogContent>
+        <MudText Typo="Typo.h6">Are you sure you want to delete this task?</MudText>
+        <MudText Typo="Typo.body1" Class="mt-3">Title: @Task.Title</MudText>
+        <MudText Typo="Typo.body1">Description: @Task.Description</MudText>
+        <MudText Typo="Typo.body1">Estimated Effort: @Task.EstimatedEffort minutes</MudText>
+        <MudText Typo="Typo.body1">Status: @Task.Status</MudText>
+    </MudDialogContent>
+    <MudDialogActions>
+        <MudButton Color="Color.Error" OnClick="Submit">Delete</MudButton>
+        <MudButton Color="Color.Secondary" OnClick="Cancel">Cancel</MudButton>
+    </MudDialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = default!;
+    [Parameter] public TaskItem Task { get; set; } = default!;
+
+    private async System.Threading.Tasks.Task Submit()
+    {
+        await Mediator.Send(new DeleteTaskCommand { Id = Task.Id });
+        MudDialog.Close(DialogResult.Ok(true));
+    }
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+} 
